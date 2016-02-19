@@ -5,7 +5,7 @@ public class Bill {
 	private int [] discounts;
 	
 	public Bill() {
-		// TODO Auto-generated constructor stub
+		
 	}
 
 }
