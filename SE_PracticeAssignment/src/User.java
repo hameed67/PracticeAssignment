@@ -5,5 +5,5 @@ public abstract class User {
 	private String userName;
 	private String password;
 	private String loginStatus;
-	boolean verifyLogin();
+	abstract boolean verifyLogin();
 }
