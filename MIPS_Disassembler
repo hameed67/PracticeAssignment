@@ -1,0 +1,298 @@
+//	Hameed Hakimi
+//	CS 3340.501
+//	This program will prompt the user the enter a file name containing machine code instruction, and will display those instructions in MIPS assembly language
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.Scanner;
+
+public class Disassembler {
+	
+	private final static String [] regArr = 
+		{"$zero", "$at", "$v0", "$v1", "$a0", 
+			"$a1", "$a2", "$a3", "$t0", "$t1", "$t2", "$t3", "$t4", "$t5", "$t6", 
+			"$t7", "$s0", "$s1", "$s2", "$s3",  "$s4", "$s5", "$s6", "$s7", "$t8",
+			"$t9", "$k0", "$k1", "$gp", "$sp", "$fp", "$ra"};
+	
+	public static int hex2decimal(String s) {
+		String digits = "0123456789ABCDEF";
+	    s = s.toUpperCase();
+        int val = 0;
+	    for (int i = 0; i < s.length(); i++) {
+	    	char c = s.charAt(i);
+	        int d = digits.indexOf(c);
+	        val = 16*val + d;
+	    }
+	        return val;
+	}
+	
+	public static String binaryToHex (String s){
+		
+		int decimal = Integer.parseInt(s,2);
+		String hexStr = Integer.toString(decimal,16);
+		return hexStr;	
+	}
+	
+	public static String getRegister(int r){
+		String register = regArr[r];
+		return register;	
+	}
+	
+	public static String getJumpAddress(String addr){
+		
+		addr = addr.substring(7);
+		String newAddr = ("0000" + addr + "00");
+		newAddr = binaryToHex(newAddr);
+		return String.valueOf(hex2decimal(newAddr));
+	}
+	
+	public static String getBranchAddress(String imm){
+		
+		imm = imm.substring(15);
+		String newImm = "0000000000000000" + imm;
+		String newImm2 = newImm.substring(2) + "00";
+		newImm = binaryToHex(newImm);
+		return String.valueOf(hex2decimal(newImm));
+	}
+	
+	public static void printR(String instruction) {
+		
+		String fc = instruction.substring(26);
+		int fcNum = Integer.parseInt(fc,2);
+		fc = Integer.toString(fcNum,16);
+		fc = getFunctCodeR(fc);
+		
+		if(fc.equals("Error")) {
+			System.out.println("Invalid instruction.");
+		}
+		
+		else if (fc.equals("sll  ") || fc.equals("srl  ")){
+			String rd = instruction.substring(16,21);
+			int rdNum = Integer.parseInt(rd,2);
+			rd = getRegister(rdNum);
+			
+			String rt = instruction.substring(11,16);
+			int rtNum = Integer.parseInt(rt,2);
+			rt = getRegister(rtNum);
+			
+			String shamt = instruction.substring(21,26);
+			int shNum = Integer.parseInt(shamt,2);
+			System.out.println(fc + " " + rd + ", " + rt + ", " + shNum);
+		}
+			
+		else {
+		
+			String rd = instruction.substring(16,21);
+			int rdNum = Integer.parseInt(rd,2);
+			rd = getRegister(rdNum);
+			
+			String rs = instruction.substring(6,11);
+			int rsNum = Integer.parseInt(rs,2);
+			rs = getRegister(rsNum);
+			
+		    String rt = instruction.substring(11,16);
+		    int rtNum = Integer.parseInt(rt,2);
+		    rt = getRegister(rtNum);
+					
+			if (fc.equals("jr  ")){
+				System.out.println(fc + "  " + rs);
+			}
+			
+			else 
+				System.out.println(fc + " " + rd + ", " + rs + ", " + rt);
+		}
+	}
+	
+	public static void printI(String instruction){
+		
+		String opC = instruction.substring(0,6);
+		int fcNum = Integer.parseInt(opC,2);
+		opC = Integer.toString(fcNum,16);
+		opC = getOpCodeI(opC);
+		
+		
+		String rs = instruction.substring(6,11);
+		int rsNum = Integer.parseInt(rs,2);
+		rs = getRegister(rsNum);
+		
+		String rt = instruction.substring(11,16);
+	    int rtNum = Integer.parseInt(rt,2);
+	    rt = getRegister(rtNum);	
+	    
+	    String immediate = instruction.substring(16);
+	    int immediateNum = Integer.parseInt(immediate,2);
+	    
+		//	invalid opcode
+		if(opC.equals("Error")) {
+			System.out.println("Invalid instruction.");
+		}
+		
+		else if (opC.equals("addi") || opC.equals("addiu") || opC.equals("andi") || opC.equals("slti") || opC.equals("sltiu"))
+		{
+			System.out.println(opC + "  " + rt + ", " + rs + ", " + immediateNum);
+		}
+		
+		else if (opC.equals("beq") || opC.equals("bne")){
+			System.out.println(opC + "  " + rt + ", " + rs + ", " + getBranchAddress(immediate));
+		}
+		
+		//	print
+		else {
+		    System.out.println(opC + "  " + rt + ", " + immediateNum + " (" + rs + ")");
+		}
+	}
+	
+	public static void printJ(String instruction){
+		
+		String opCode = binaryToHex(instruction.substring(0,6));
+		
+		if(opCode.equals("2")){
+			System.out.println("j     " + (getJumpAddress(instruction)));
+		}
+		
+		else
+			System.out.println("jal   " + (getJumpAddress(instruction)));
+	}
+	
+	public static String getFunctCodeR (String funct){
+		
+		String fc ="";
+		 switch (funct) {
+	         case "20":
+	        	 fc = "add  ";
+	        	 break;         		
+	         case "21":
+	        	 fc = "addiu  ";
+	        	 break;        	 
+	         case "24":
+	        	 fc = "and  ";
+	        	 break;     
+	         case "8":
+	        	fc = "jr  ";
+	        	 break;        	 
+	         case "27":
+	        	 fc = "nor  ";
+	        	 break;        	 
+	         case "57":
+	        	 fc = "or  ";
+	        	 break;        	 
+	         case "2a":
+	        	 fc = "slt  ";
+	        	 break;        	 
+	         case "2b":
+	        	 fc = "sltu  ";
+	        	 break;       	 
+	         case "0":
+	        	 fc = "sll  ";
+	        	 break;        	 
+	         case "2":
+	        	 fc = "srl  ";
+	        	 break;        	 
+	         case "22":
+	        	 fc = "sub  ";
+	        	 break;        
+	         case "23":
+	        	 fc = "subu  ";
+	        	 break;
+	         default:
+	        	 fc = "Error";
+	             break;
+		 }
+		 
+		 return fc;
+	}
+	
+	public static String getOpCodeI (String funct){
+		
+		String fc ="";
+		 switch (funct) {
+		  	 case "8":
+	        	fc = "addi";
+	        	 break;      
+	         case "9":
+	        	 fc = "addiu";
+	        	 break;         		
+	         case "c":
+	        	 fc = "andi";
+	        	 break;        	 
+	         case "4":
+	        	 fc = "beq ";
+	        	 break;     
+	         case "5":
+	        	 fc = "bne ";
+	        	 break;        	 
+	         case "24":
+	        	 fc = "lbu ";
+	        	 break;        	 
+	         case "25":
+	        	 fc = "lhu ";
+	        	 break;        	 
+	         case "30":
+	        	 fc = "ll  ";
+	        	 break;       	 
+	         case "f":
+	        	 fc = "lui";
+	        	 break;        	 
+	         case "23":
+	        	 fc = "lw  ";
+	        	 break;        	 
+	         case "d":
+	        	 fc = "oi  ";
+	        	 break;        
+	         case "a":
+	        	 fc = "slti";
+	        	 break;
+	         case "b":
+	        	 fc = "sltiu";
+	        	 break;
+	         case "28":
+	        	 fc = "sb " ;
+	        	 break;
+	         case "38":
+	        	 fc = "sc  ";
+	        	 break;
+	         case "29":
+	        	 fc = "sh  ";
+	        	 break;
+	         case "2b":
+	        	 fc = "sw  ";
+	        	 break;
+	         default:
+	        	 fc = "Error";
+	             break;
+		 }
+		 
+		 return fc;
+	}
+	
+	public static void main(String[] args) throws FileNotFoundException {
+	
+		Scanner sc = new Scanner(System.in);
+		System.out.println("Please ensure the text file is in your project folder ");
+		System.out.print("Enter the filename: ");
+		String name = sc.nextLine();
+		
+		File file = new File (name);
+		Scanner input = new Scanner(file);
+		
+			while(input.hasNextLine()){
+				
+				String string = input.nextLine();
+				String opCode = binaryToHex(string.substring(0,6));
+				
+				// R format
+				if(opCode.equals("0")){
+					printR(string);
+				}
+				
+				// J format
+				else if (opCode.equals("2") || opCode.equals("3")){
+					printJ(string);
+				}
+			
+				// I format
+				else
+					printI(string);
+			}
+	}
+}
